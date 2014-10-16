@@ -11,8 +11,6 @@
 
     #game-of-life {
       display: block;
-      width: 400px;
-      height: 400px;
       margin: 1em auto;
       border: 1px solid #000;
     }
@@ -50,10 +48,11 @@
   <div class="container">
     <header>
       <h1>Game of Life</h1>
-      <h5>Ruled by original Conway's rules.<br>In pure JS. <a href="https://github.com/argshook/gameOfLife">Source</a> by <a href="http://twitter.com/argshook">@argshook</a>.</h5>
+      <h5>Ruled by original Conway's rules<sup>*</sup>.<br>In pure JS. <a href="https://github.com/argshook/gameOfLife">Source</a> by <a href="http://twitter.com/argshook">@argshook</a>.</h5>
     </header>
     <section>
-      <canvas id="game-of-life" class="game" width="300" height="300"></canvas>
+      <canvas id="game-of-life" class="game" width="500" height="500"></canvas>
+      <h6 style="text-align: right;"><sup>*</sup> 40x40, random seed on start</h6>
       <div class="iterations"></div>
       <hr>
       <div class="buttons">
