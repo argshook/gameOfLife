@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Game of life</title>
+  <style>
+    body {
+      background: #f1f1f1;
+      font-family: sans-serif;
+    }
+
+    #game-of-life {
+      display: block;
+      width: 400px;
+      height: 400px;
+      margin: 1em auto;
+      border: 1px solid #000;
+    }
+
+    .container {
+      margin: 0 auto;
+      max-width: 700px;
+    }
+
+    header {
+      text-align: right;
+    }
+
+    .iterations {
+      text-align: center;
+    }
+
+    .buttons {
+      text-align: center;
+    }
+    button {
+      margin-right: 10px;
+      padding: .4em .7em;
+      border: 1px solid #222;
+      font-size: 1.5em;
+      background: #fefefe;
+    }
+
+    .hide {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Game of Life</h1>
+      <h5>Ruled by original Conway's rules.<br>Written in pure JavaScript. By <a href="http://twitter.com/argshook">@argshook</a></h5>
+    </header>
+    <section>
+      <canvas id="game-of-life" class="game" width="300" height="300"></canvas>
+      <div class="iterations"></div>
+      <hr>
+      <div class="buttons">
+        <button class="start-btn">Start</button>
+        <button class="restart-btn hide">Again</button>
+      </div>
+      <ul class="iteration-list"></ul>
+    </section>
+  </div>
+
+  <script src="game.js"></script>
+  <script>
+    var d = document,
+        startBtn      = d.querySelector('.start-btn'),
+        restartBtn    = d.querySelector('.restart-btn'),
+        iterationList = d.querySelector('.iteration-list');
+
+    var game = new GameOfLife({
+      size: 40,
+      fps: 13,
+      gameOnStartCallback: function() {
+        restartBtn.classList.add('hide');
+      },
+      gameOnOverCallback: function(iterations) {
+        var li = document.createElement('li');
+        li.innerHTML = iterations;
+        iterationList.appendChild(li);
+        restartBtn.classList.remove('hide');
+      }
+    });
+
+    startBtn.addEventListener('click', function() {
+      game.start();
+      startBtn.classList.add('hide');
+    });
+
+    restartBtn.addEventListener('click', function() {
+      game.reStart();
+      restartBtn.classList.add('hide');
+    });
+  </script>
+</body>
+</html>
