@@ -18,7 +18,7 @@ function GameOfLife(options) {
   this.isGameRunning  = false;
 
   function createMatrix(size) {
-    matrix = new Array(size),
+    var matrix = new Array(size),
     matrixLength = matrix.length;
     for(var i = 0; i < matrixLength; i++) {
       matrix[i] = new Array(size);
@@ -131,6 +131,7 @@ function GameOfLife(options) {
     // rinse & repeat
   };
 
+  // TODO: make callback for each frame move this there
   this.updateIterationItem = function(iteration) {
     document.querySelector('.iterations').innerHTML = "Iteration: " + iteration;
   };
@@ -142,20 +143,18 @@ function GameOfLife(options) {
         then     = Date.now(),
         interval = 1000/fps,
         delta;
-
+    console.log(this.isGameRunning);
     function draw() {
-      if(_this.isGameRunning) {
-        requestAnimationFrame(draw);
-       
-        now = Date.now();
-        delta = now - then;
+      _this.animationFrame = requestAnimationFrame(draw);
+      now = Date.now();
+      delta = now - then;
 
-        if (delta > interval) {
-          then = now - (delta % interval);
-            _this.drawProgress();
-        }
+      if (delta > interval) {
+        then = now - (delta % interval);
+          _this.drawProgress();
       }
     }
+
     draw();
   };
 
@@ -170,7 +169,7 @@ function GameOfLife(options) {
 
   this.reStart = function() {
     this.iteration = 0;
-    this.cells = createMatrix(this.options.size);;
+    this.cells = createMatrix(this.options.size);
     this.recordedFrames = [];
     this.isGameRunning = false;
     this.start();
@@ -178,6 +177,7 @@ function GameOfLife(options) {
 
   this.gameOver = function() {
     this.isGameRunning = false;
+    window.cancelAnimationFrame(this.animationFrame);
     this.options.gameOnOverCallback.call(null, this.iteration - 1);
   };
 }
