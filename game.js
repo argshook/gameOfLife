@@ -25,8 +25,8 @@ function GameOfLife(options) {
     this.context.stroke();
 
     this.context.fillRect(
-      this.options.canvas.width / this.options.size * x,
-      this.options.canvas.height / this.options.size * y,
+      this.options.canvas.width / this.options.size * x + 2,
+      this.options.canvas.height / this.options.size * y + 2,
       this.options.canvas.width / this.options.size - 4,
       this.options.canvas.height / this.options.size - 4
     );
