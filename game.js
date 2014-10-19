@@ -7,41 +7,40 @@ function GameOfLife(options) {
     canvas: options.canvas || document.getElementById('game-of-life'),
     size: options.size || 20,
     fps: options.fps || 30,
+    crazyColors: false,
     gameOnOverCallback: options.gameOnOverCallback || function() {},
-    gameOnStartCallback: options.gameOnStartCallback || function() {}
+    gameOnStartCallback: options.gameOnStartCallback || function() {},
+    gameOnDrawCallback: options.gameOnDrawCallback || function() {}
   };
 
-  this.cells          = createMatrix(this.options.size);
-  this.context        = this.options.canvas.getContext('2d');
-  this.iteration      = 0;
-  this.recordedFrames = [];
-  this.isGameRunning  = false;
+  _this = this;
 
-  function createMatrix(size) {
+  function drawCell(x, y, color) {
+    this.context.fillStyle = color;
+    this.context.lineWidth = 5;
+    this.context.strokeStyle = '#003300';
+    this.context.stroke();
+
+    this.context.fillRect(
+      this.options.canvas.width / this.options.size * x,
+      this.options.canvas.height / this.options.size * y,
+      this.options.canvas.width / this.options.size - 4,
+      this.options.canvas.height / this.options.size - 4
+    );
+  }
+
+  this.createMatrix = function(size) {
     var matrix = new Array(size),
     matrixLength = matrix.length;
     for(var i = 0; i < matrixLength; i++) {
       matrix[i] = new Array(size);
     }
-    return matrix;
-  }
-
-  function drawCell(x, y, color) {
-    var multiplier = 1;
-    this.context.fillStyle = color;
-    this.context.fillRect(
-      multiplier * this.options.canvas.width / this.options.size * x,
-      multiplier * this.options.canvas.height / this.options.size * y,
-      multiplier * this.options.canvas.width / this.options.size - 1,
-      multiplier * this.options.canvas.height / this.options.size - 1
-    );
-  }
-
-  this.fillRandomCells = function(chance) {
-    var _this = this;
-    this.walkThroughMatrix(this.cells, function(row, col) {
-      _this.cells[row][col] = Math.random() * 2 | 0 > 1 ? 1 : 0;
+    
+    this.walkThroughMatrix(matrix, function(row, col) {
+      matrix[row][col] = 0;
     });
+
+    return matrix;
   };
 
   this.walkThroughMatrix = function(matrix, callback) {
@@ -57,7 +56,7 @@ function GameOfLife(options) {
 
   this.createNextGenCells = function(cells) {
     var _this = this,
-        newCells = createMatrix(this.options.size);
+        newCells = this.createMatrix(this.options.size);
 
     this.walkThroughMatrix(cells, function(x, y) {
       var aliveNeighboursCount = _this.getAliveNeighboursCount(cells, y, x);
@@ -98,42 +97,64 @@ function GameOfLife(options) {
   };
 
   this.framesEqual = function(frame1, frame2) {
-    // TODO: the name squished, really?
     if(frame1 !== undefined && frame2 !== undefined) {
       return frame1.join('') === frame2.join('');
     }
   };
 
+  this.ageToColor = function(age) {
+    if(age === 0) {
+      return "#fff";
+    }
+    age *= 100000;
+    age >>>= 0;
+    var b = age & 0xFF,
+        g = (age & 0xFF00) >>> 8,
+        r = (age & 0xFF0000) >>> 16,
+        a = ( (age & 0xFF000000) >>> 24 ) / 255 ;
+
+    return "rgba(" + [r, g, b, .25].join(",") + ")";
+  };
+
   this.drawProgress = function() {
     var _this = this;
 
+    // record frame
     this.recordedFrames.unshift(this.cells);
     this.recordedFrames = this.recordedFrames.slice(0, 3);
 
+    // check if first and third frame of last recorded frames are equal
     if(this.framesEqual(this.recordedFrames[0], this.recordedFrames[2])) {
       this.gameOver();
       return false;
     }
 
-    this.updateIterationItem(this.iteration++);
+    this.options.gameOnDrawCallback.call(null, this.iteration++);
 
     // clear canvas
     this.context.clearRect(0, 0, this.options.canvas.width , this.options.canvas.height);
 
-    // draw each cell
+    // draw each cell and update their age
     this.walkThroughMatrix(this.cells, function(x, y) {
-      drawCell.call(_this, x, y, _this.cells[y][x] ? "#000" : "transparent");
+      // TODO: honestly, I don't know why do I have to check for iteration no. here
+      if(_this.iteration > 1 && _this.cells[y][x] === 1) {
+        _this.cellsAge[y][x]++;
+      }
+
+      var agedCellColor;
+      if(_this.options.crazyColors) {
+        agedCellColor = _this.ageToColor(_this.cellsAge[y][x]);
+      } else {
+        agedCellColor = "#fff";
+      }
+
+      drawCell.call(_this, x, y, _this.cells[y][x] ? "#000" : agedCellColor);
     });
 
     // get new generation cells
     var newCells = this.createNextGenCells(this.cells);
     this.cells = newCells;
     // rinse & repeat
-  };
-
-  // TODO: make callback for each frame move this there
-  this.updateIterationItem = function(iteration) {
-    document.querySelector('.iterations').innerHTML = "Iteration: " + iteration;
   };
 
   this.automateProgress = function() {
@@ -143,7 +164,7 @@ function GameOfLife(options) {
         then     = Date.now(),
         interval = 1000/fps,
         delta;
-    console.log(this.isGameRunning);
+
     function draw() {
       _this.animationFrame = requestAnimationFrame(draw);
       now = Date.now();
@@ -161,17 +182,16 @@ function GameOfLife(options) {
   this.start = function() {
     if(!this.isGameRunning) {
       this.isGameRunning = true;
-      this.fillRandomCells(5);
       this.options.gameOnStartCallback.call(null);
       this.automateProgress();
     }
   };
 
   this.reStart = function() {
-    this.iteration = 0;
-    this.cells = createMatrix(this.options.size);
+    this.iteration      = 0;
+    this.cellsAge       = this.cells.slice(0);
     this.recordedFrames = [];
-    this.isGameRunning = false;
+    this.isGameRunning  = false;
     this.start();
   };
 
@@ -180,4 +200,91 @@ function GameOfLife(options) {
     window.cancelAnimationFrame(this.animationFrame);
     this.options.gameOnOverCallback.call(null, this.iteration - 1);
   };
+
+  this.showCrazyColors = function() {
+    this.options.crazyColors = true;
+  };
+
+  this.hideCrazyColors = function() {
+    this.options.crazyColors = false;
+  };
+
+  this.clearCanvas = function() {
+    var _this = this;
+    this.iteration = 0;
+    this.recorderFrames = [];
+    this.cells = this.createMatrix(this.options.size);
+    this.walkThroughMatrix(this.cells, function(x, y) {
+      drawCell.call(_this, x, y, "#fff");
+    });
+  };
+
+  function init() {
+    _this               = this;
+    this.context        = this.options.canvas.getContext('2d');
+    this.cells          = this.createMatrix(this.options.size);
+    this.cellSize       = this.options.canvas.width / this.options.size;
+    this.iteration      = 0;
+    this.recordedFrames = [];
+    this.isGameRunning  = false;
+    this.cellsAge       = this.cells;
+
+    var mouseDownFlag = false,
+        previousGridItem = 0;
+
+    this.options.canvas.addEventListener('mousedown', function() {
+      mouseDownFlag = true;
+      mouseHandler('click');
+    }, false);
+
+    this.options.canvas.addEventListener('mousemove', function() {
+      if(mouseDownFlag) {
+        mouseHandler('drag');
+      }
+    }, false);
+
+    this.options.canvas.addEventListener('mouseup', function() {
+      mouseDownFlag = false;
+    }, false);
+
+    function mouseHandler(type) {
+      // TODO: this is too complicated, should be more readable
+      var clickedCell = getMousePos(event);
+
+      if(type === 'click') {
+        _this.cells[clickedCell.y][clickedCell.x] = _this.cells[clickedCell.y][clickedCell.x] === 1 ? 0 : 1;
+        drawCellWrapper(clickedCell.x, clickedCell.y, _this.cells[clickedCell.y][clickedCell.x] === 1 ? "#000" : "#fff");
+      } else if(type === 'drag') {
+        var currentGridItem = {x: clickedCell.x, y: clickedCell.y};
+        if(previousGridItem !== currentGridItem) {
+          previousGridItem = {x: clickedCell.x, y: clickedCell.y};
+
+          if(_this.cells[clickedCell.y][clickedCell.x] !== 1) {
+            _this.cells[clickedCell.y][clickedCell.x] = _this.cells[clickedCell.y][clickedCell.x] === 1 ? 0 : 1;
+          }
+
+          drawCellWrapper(clickedCell.x, clickedCell.y, _this.cells[clickedCell.y][clickedCell.x] === 1 ? "#000" : "#fff");
+        }
+      }
+    }
+
+    function drawCellWrapper(x, y, color) {
+      drawCell.call(_this, x, y, color);
+    }
+
+    function getMousePos(event) {
+      var rect = _this.options.canvas.getBoundingClientRect();
+      return {
+        y: Math.floor((event.clientY - rect.top) / (rect.bottom-rect.top) * _this.options.canvas.height / _this.cellSize),
+        x: Math.floor((event.clientX - rect.left) / (rect.right-rect.left) * _this.options.canvas.width / _this.cellSize)
+      };
+    }
+
+    // draw first items so that the grid will be visible
+    this.walkThroughMatrix(this.cells, function(x, y) {
+      drawCell.call(_this, x, y, "#fff");
+    });
+  }
+
+  init.call(this);
 }

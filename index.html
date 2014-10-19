@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Game of life</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       background: #f1f1f1;
       font-family: sans-serif;
@@ -39,6 +40,10 @@
       background: #fefefe;
     }
 
+    .btn-sm {
+      font-size: .8em;
+    }
+
     .hide {
       display: none;
     }
@@ -52,8 +57,12 @@
     </header>
     <section>
       <canvas id="game-of-life" class="game" width="500" height="500"></canvas>
-      <h6 style="text-align: right;"><sup>*</sup> 40x40, random seed on start</h6>
+      <h6 style="text-align: right;"><sup>*</sup> 30x30, click/drag to draw cells</h6>
       <div class="iterations"></div>
+      <input type="checkbox" id="crazy-colors">
+      <label for="crazy-colors">Show crazy colors</label>
+      <br>
+      <button id="clear-canvas" class="btn-sm">Clear</button>
       <hr>
       <div class="buttons">
         <button class="start-btn">Start</button>
@@ -66,12 +75,15 @@
   <script src="game.js"></script>
   <script>
     var d = document,
-        startBtn      = d.querySelector('.start-btn'),
-        restartBtn    = d.querySelector('.restart-btn'),
-        iterationList = d.querySelector('.iteration-list');
+        startBtn       = d.querySelector('.start-btn'),
+        restartBtn     = d.querySelector('.restart-btn'),
+        iterationList  = d.querySelector('.iteration-list'),
+        iterations     = d.querySelector('.iterations'),
+        crazyColors    = d.getElementById('crazy-colors'),
+        clearCanvasBtn = d.getElementById('clear-canvas');
 
     var game = new GameOfLife({
-      size: 80,
+      size: 30,
       fps: 10,
       gameOnStartCallback: function() {
         restartBtn.classList.add('hide');
@@ -81,6 +93,9 @@
         li.innerHTML = iterations;
         iterationList.appendChild(li);
         restartBtn.classList.remove('hide');
+      },
+      gameOnDrawCallback: function(iteration) {
+        iterations.innerHTML = "Iteration: " + iteration;
       }
     });
 
@@ -92,6 +107,18 @@
     restartBtn.addEventListener('click', function() {
       game.reStart();
       restartBtn.classList.add('hide');
+    });
+
+    crazyColors.addEventListener('click', function(event) {
+      if(event.target.checked) {
+        game.showCrazyColors();
+      } else {
+        game.hideCrazyColors();
+      }
+    });
+
+    clearCanvasBtn.addEventListener('click', function() {
+      game.clearCanvas();
     });
   </script>
   <script>
