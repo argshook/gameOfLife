@@ -109,14 +109,14 @@ function GameOfLife(options) {
     if(age === 0) {
       return "#fff";
     }
-    age *= 100000;
+    age *= 1000;
     age >>>= 0;
     var b = age & 0xFF,
-        g = (age & 0xFF00) >>> 8,
+        g = (age * 1000 & 0xFF00) >>> 8,
         r = (age & 0xFF0000) >>> 16,
         a = ( (age & 0xFF000000) >>> 24 ) / 255 ;
 
-    return "rgba(" + [r, g, b, .25].join(",") + ")";
+    return "rgba(" + [r, g, b, 0.25].join(",") + ")";
   };
 
   this.drawProgress = function(forced) {
