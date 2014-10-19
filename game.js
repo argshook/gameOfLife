@@ -8,9 +8,12 @@ function GameOfLife(options) {
     size: options.size || 20,
     fps: options.fps || 30,
     crazyColors: false,
+    gameOnInitCallback: options.gameOnInitCallback || function() {},
     gameOnOverCallback: options.gameOnOverCallback || function() {},
     gameOnStartCallback: options.gameOnStartCallback || function() {},
-    gameOnDrawCallback: options.gameOnDrawCallback || function() {}
+    gameOnDrawCallback: options.gameOnDrawCallback || function() {},
+    gameOnSavePatternCallback: options.gameOnSavePatternCallback || function() {},
+    gameOnLoadPatternCallback: options.gameOnLoadPatternCallback || function() {}
   };
 
   _this = this;
@@ -116,7 +119,7 @@ function GameOfLife(options) {
     return "rgba(" + [r, g, b, .25].join(",") + ")";
   };
 
-  this.drawProgress = function() {
+  this.drawProgress = function(forced) {
     var _this = this;
 
     // record frame
@@ -124,7 +127,7 @@ function GameOfLife(options) {
     this.recordedFrames = this.recordedFrames.slice(0, 3);
 
     // check if first and third frame of last recorded frames are equal
-    if(this.framesEqual(this.recordedFrames[0], this.recordedFrames[2])) {
+    if(!forced && this.framesEqual(this.recordedFrames[0], this.recordedFrames[2])) {
       this.gameOver();
       return false;
     }
@@ -219,6 +222,51 @@ function GameOfLife(options) {
     });
   };
 
+  this.savePattern = function() {
+    var nameSpace = 'gameOfLife',
+        localItem = window.localStorage.getItem(nameSpace) || false,
+        data      = [];
+
+    savedItems = localItem ? JSON.parse(localItem) : false;
+
+    if(savedItems && savedItems.length > 0) {
+      data = {
+        id: savedItems.length + 1,
+        pattern: this.cells
+      };
+      savedItems.push(data);
+      window.localStorage.setItem(nameSpace, JSON.stringify(savedItems));
+
+      // shoot callback
+      this.options.gameOnSavePatternCallback.call(null, data);
+    } else {
+      data = [{ id: 1, pattern: this.cells }];
+      window.localStorage.setItem(nameSpace, JSON.stringify(data));
+    }
+  };
+
+  this.loadPattern = function(id) {
+    var namespace   = 'gameOfLife',
+        localItem   = window.localStorage.getItem(namespace) || false,
+        loadedCells;
+
+    savedItems = localItem ? JSON.parse(localItem) : false;
+
+    if(savedItems && savedItems.length > 0) {
+      loadedPattern = savedItems.filter(function(obj) {
+        return obj.id === parseInt(id, 10);
+      })[0];
+    }
+
+    this.cells = loadedPattern.pattern;
+    this.drawProgress(true);
+
+    // shoot callback
+    this.options.gameOnLoadPatternCallback.call(null, loadedPattern);
+
+    return loadedPattern;
+  };
+
   function init() {
     _this               = this;
     this.context        = this.options.canvas.getContext('2d');
@@ -284,6 +332,9 @@ function GameOfLife(options) {
     this.walkThroughMatrix(this.cells, function(x, y) {
       drawCell.call(_this, x, y, "#fff");
     });
+
+    // shoot callback
+    this.options.gameOnInitCallback.call(null);
   }
 
   init.call(this);
